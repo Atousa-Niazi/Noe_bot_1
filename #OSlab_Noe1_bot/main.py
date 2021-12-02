@@ -5,6 +5,11 @@ import persiantools
 from telebot import types
 from persiantools.jdatetime import JalaliDateTime
 import datetime
+import qrcode
+from PIL import Image
+from gtts import gTTS
+import os
+
 
 #you have the token, you are the boss in here
 bot = telebot.TeleBot("2144775312:AAGrhjF2FaqI0xFVhHlGLaSDQAX-_9e07A0")
@@ -159,6 +164,46 @@ def max_w(message):
       masy=bot.reply_to(message, "invalid3 try again.")
       bot.register_next_step_handler(masy,max_w)
 
+@bot.message_handler(commands=['QR code'])
+def qr_code(message):
+  try:
+      bot.reply_to(message, "enter a string.")
+      bot.register_next_step_handler(message,qr_make)
+  except:
+      bot.send_message(message.chat.id,"try again. ")
+      bot.register_next_step_handler(message,qr_code)
+
+def qr_make(message):
+  try:
+      qrcode_img = qrcode.make(message.text)
+      qrcode_img.save("qrcode.png")
+      photo = open('qrcode.png', 'rb')
+      bot.send_photo(message.chat.id,photo)
+  except Exception as e:
+    print(e)
+    #bot.send_message(message.chat.id,"try again. ")
+    #bot.register_next_step_handler(message,qr_code)
+
+@bot.message_handler(commands=['text-speech'])
+def text_speech(message):
+  try:
+      bot.reply_to(message,"enter a sentence in english.")
+      bot.register_next_step_handler(message,generate_speech)
+  except:
+      bot.send_message(message.chat.id,"try again. ")
+      bot.register_next_step_handler(message,text_speech)
+def generate_speech(message):
+  try:
+      mytext = message.text
+      language = 'en'
+      myobj = gTTS(text=mytext, lang=language, slow=False)
+      myobj.save("tetosp.mp3")
+      audio = open('tetosp.mp3', 'rb')
+      bot.send_audio(message.chat.id, audio)
+  except:
+      bot.send_message(message.chat.id,"try again. ")
+      bot.register_next_step_handler(message,generate_speech)
+
 @bot.message_handler(commands=['help'])
 def help_me(message):
   bot.reply_to(message, "Menu")
@@ -168,8 +213,10 @@ def help_me(message):
   b_game = types.KeyboardButton('game')
   b_age = types.KeyboardButton('age cal')
   b_max = types.KeyboardButton('max')
-  markup.row(b_help,b_start)
-  markup.row(b_max,b_age,b_game)
+  b_qr = types.KeyboardButton('QR')
+  b_ts = types.KeyboardButton('text-speech')
+  markup.row(b_help,b_qr,b_start)
+  markup.row(b_max,b_age,b_game,b_ts)
   bot.reply_to(message, "choose something new.",reply_markup=markup)
 @bot.message_handler(func=lambda message: True)
 def answer(message):
@@ -183,6 +230,10 @@ def answer(message):
     help_me(message)
   elif message.text=='max':
     max_a(message)
+  elif message.text=='QR':
+    qr_code(message)
+  elif message.text=='text-speech':
+    text_speech(message)
   else:
     help_me(message)
 
